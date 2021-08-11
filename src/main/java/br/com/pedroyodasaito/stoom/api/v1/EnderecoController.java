@@ -1,6 +1,8 @@
 package br.com.pedroyodasaito.stoom.api.v1;
 
 import br.com.pedroyodasaito.stoom.entity.Endereco;
+import br.com.pedroyodasaito.stoom.integracao.GoogleMapsService;
+import br.com.pedroyodasaito.stoom.integracao.dto.LocationDTO;
 import br.com.pedroyodasaito.stoom.service.EnderecoService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Objects;
 
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -34,6 +37,13 @@ public class EnderecoController {
     @PostMapping
     @ResponseStatus(CREATED)
     public Integer salvar(@RequestBody @Valid EnderecoInserirDTO dto){
+        if (Objects.isNull(dto.getLatitude()) && Objects.isNull(dto.getLongitude())) {
+            LocationDTO locationDTO = GoogleMapsService.getGeometry(dto.getZipcode().toString(), dto.getCountry());
+            if (Objects.isNull(locationDTO)) throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+            dto.setLatitude(locationDTO.getLat());
+            dto.setLongitude(locationDTO.getLng());
+        }
+
         return service.insert(dto).getId();
     }
 
